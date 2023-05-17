@@ -147,3 +147,6 @@ PRODUCT_PACKAGES += \
 
 # Properties
 TARGET_VENDOR_PROP := $(LOCAL_PATH)/vendor.prop
+
+# Camera Sound RRO
+PRODUCT_PACKAGES += CameraSoundOverlay
