@@ -7,45 +7,35 @@
 BUILD_BROKEN_DUP_RULES := true
 DISABLE_ARTIFACT_PATH_REQUIREMENTS := true
 
-# Kernel
-TARGET_KERNEL_DTBO_PREFIX := dts/
-TARGET_KERNEL_DTBO := google/devices/lynx/dtbo.img
-TARGET_KERNEL_DTB := \
-    google/devices/lynx/google-base/gs201-a0.dtb \
-    google/devices/lynx/google-base/gs201-b0.dtb \
-    google/devices/lynx/google-base/gs201-b0_v2-ipop.dtb
+# Uses prebuilt kernel for now.
+TARGET_KERNEL_DIR = device/google/lynx-kernel
+TARGET_FORCE_PREBUILT_KERNEL := true
+TARGET_PREBUILT_KERNEL := $(TARGET_KERNEL_DIR)/Image.lz4
+PRODUCT_COPY_FILES += $(TARGET_PREBUILT_KERNEL):kernel
+
+# Device Tree
+BOARD_PREBUILT_DTBIMAGE_DIR := $(TARGET_KERNEL_DIR)
+BOARD_PREBUILT_DTBOIMAGE := $(BOARD_PREBUILT_DTBIMAGE_DIR)/dtbo.img
 
 # Kernel modules
-BOARD_VENDOR_KERNEL_MODULES_LOAD_RAW := $(strip $(shell cat device/google/lynx/vendor_dlkm.modules.load))
-BOARD_VENDOR_KERNEL_MODULES_LOAD := $(foreach m,$(BOARD_VENDOR_KERNEL_MODULES_LOAD_RAW),$(notdir $(m)))
-BOARD_VENDOR_RAMDISK_KERNEL_MODULES_LOAD_RAW := $(strip $(shell cat device/google/lynx/vendor_kernel_boot.modules.load))
-BOARD_VENDOR_RAMDISK_KERNEL_MODULES_LOAD := $(foreach m,$(BOARD_VENDOR_RAMDISK_KERNEL_MODULES_LOAD_RAW),$(notdir $(m)))
-BOOT_KERNEL_MODULES := $(BOARD_VENDOR_RAMDISK_KERNEL_MODULES_LOAD)
-
-TARGET_KERNEL_EXT_MODULES := \
-    amplifiers/audiometrics \
-    amplifiers/cs35l41 \
-    amplifiers/cs35l45 \
-    amplifiers/cs40l26 \
-    amplifiers/drv2624 \
-    aoc \
-    aoc/alsa \
-    aoc/usb \
-    bluetooth/qcom \
-    bms \
-    display/samsung \
-    edgetpu/janeiro/drivers/edgetpu \
-    gpu/mali_kbase \
-    gpu/mali_pixel \
-    gxp/gs201 \
-    lwis \
-    nfc \
-    power/reset \
-    touch/common \
-    touch/focaltech/ft3658 \
-    touch/goodix \
-    uwb/kernel \
-    video/gchips \
-    wlan/wcn6740/cnss2 \
-    wlan/wcn6740/wlan/qcacld-3.0 \
-    ../devices/google/lynx/display
+KERNEL_MODULE_DIR := $(TARGET_KERNEL_DIR)
+KERNEL_MODULES := $(wildcard $(KERNEL_MODULE_DIR)/*.ko)
+BOARD_VENDOR_KERNEL_MODULES_BLOCKLIST_FILE := $(KERNEL_MODULE_DIR)/vendor_dlkm.modules.blocklist
+# Prebuilt kernel modules that are *not* listed in vendor_kernel_boot.modules.load
+BOARD_PREBUILT_VENDOR_KERNEL_RAMDISK_KERNEL_MODULES = fips140/fips140.ko
+BOARD_VENDOR_KERNEL_RAMDISK_KERNEL_MODULES_LOAD_EXTRA = $(foreach k,$(BOARD_PREBUILT_VENDOR_KERNEL_RAMDISK_KERNEL_MODULES),$(if $(wildcard $(KERNEL_MODULE_DIR)/$(k)), $(k)))
+KERNEL_MODULES += $(addprefix $(KERNEL_MODULE_DIR)/, $(BOARD_VENDOR_KERNEL_RAMDISK_KERNEL_MODULES_LOAD_EXTRA))
+# Kernel modules that are listed in vendor_kernel_boot.modules.load
+BOARD_VENDOR_KERNEL_RAMDISK_KERNEL_MODULES_LOAD_FILE := $(strip $(shell cat $(KERNEL_MODULE_DIR)/vendor_kernel_boot.modules.load))
+ifndef BOARD_VENDOR_KERNEL_RAMDISK_KERNEL_MODULES_LOAD_FILE
+$(error vendor_kernel_boot.modules.load not found or empty)
+endif
+BOARD_VENDOR_KERNEL_RAMDISK_KERNEL_MODULES_LOAD := $(BOARD_VENDOR_KERNEL_RAMDISK_KERNEL_MODULES_LOAD_EXTRA)
+BOARD_VENDOR_KERNEL_RAMDISK_KERNEL_MODULES_LOAD += $(BOARD_VENDOR_KERNEL_RAMDISK_KERNEL_MODULES_LOAD_FILE)
+BOARD_VENDOR_KERNEL_RAMDISK_KERNEL_MODULES := $(addprefix $(KERNEL_MODULE_DIR)/, $(BOARD_VENDOR_KERNEL_RAMDISK_KERNEL_MODULES_LOAD_EXTRA))
+BOARD_VENDOR_KERNEL_RAMDISK_KERNEL_MODULES += $(addprefix $(KERNEL_MODULE_DIR)/, $(notdir $(BOARD_VENDOR_KERNEL_RAMDISK_KERNEL_MODULES_LOAD_FILE)))
+BOARD_VENDOR_KERNEL_MODULES_LOAD := $(strip $(shell cat $(KERNEL_MODULE_DIR)/vendor_dlkm.modules.load))
+ifndef BOARD_VENDOR_KERNEL_MODULES_LOAD
+$(error vendor_dlkm.modules.load not found or empty)
+endif
+BOARD_VENDOR_KERNEL_MODULES := $(KERNEL_MODULES)
