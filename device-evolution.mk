@@ -144,5 +144,9 @@ PRODUCT_PACKAGES += \
 # Properties
 TARGET_VENDOR_PROP := $(LOCAL_PATH)/vendor.prop
 
-# Camera Sound RRO
-PRODUCT_PACKAGES += CameraSoundOverlay
+# Additional RROs
+PRODUCT_PACKAGES += \
+    FrankenFrameworksResOverlay \
+    FrankenSettingsOverlay \
+    FrankenSystemUIOverlay \
+    CameraSoundOverlay
